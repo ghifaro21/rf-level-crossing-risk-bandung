@@ -29,32 +29,5 @@ Pelabelan data dasar (*ground truth*) disusun menggunakan pendekatan *Rule-Based
    git clone https://github.com/username-anda/rf-level-crossing-risk-bandung.git
    cd rf-level-crossing-risk-bandung
 
-# Struktur Direktori
-rf-level-crossing-risk-bandung/
-│
-├── .streamlit/
-│   └── config.toml             # Konfigurasi tema Dark Mode kustom
-├── artifacts/                  # Folder berisi model .pkl (WAJIB ADA)
-│   ├── rf_model.pkl
-│   ├── scaler_rf.pkl
-│   ├── encoders_rf.pkl
-│   └── feature_cols_rf.pkl
-├── components/
-│   ├── sidebar.py              # Navigasi sidebar & panel status model
-│   └── charts.py               # Visualisasi Plotly (Gauge & Bar chart)
-├── core/
-│   ├── config.py               # Manajemen path direktori artefak
-│   └── model.py                # Load model (@st.cache_resource) & predict_risk()
-├── views/
-│   ├── home.py                 # Halaman Beranda (Dashboard Ringkasan)
-│   ├── predict.py              # Halaman Prediksi (Form Input 16 Fitur & OSM)
-│   └── methodology.py          # Halaman Metodologi (Transparansi Pipeline)
-├── styles/
-│   └── theme.py                # Definisi warna & CSS custom
-├── app.py                      # Entry point & routing antar halaman
-├── requirements.txt            # Daftar dependensi Python
-├── .gitignore                  # File yang diabaikan Git
-└── README.md                   # Dokumentasi utama repository
-
 # rf-level-crossing-risk-bandung
 🚂 Sistem Klasifikasi Risiko Perlintasan Sebidang Kereta Api di Kota Bandung menggunakan Random Forest &amp; Streamlit. (Proyek Terintegrasi 1 - S1 Sains Data ULBI, 2026)
