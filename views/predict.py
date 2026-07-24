@@ -1,3 +1,6 @@
+import json
+import urllib.parse
+import urllib.request
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -5,64 +8,177 @@ from components.charts import RISK_COLORS, make_bar, make_gauge
 from core.model import predict_risk
 
 
+BANDUNG_JPL_PRESETS = {
+    "📌 Pilih Perlintasan Sebidang Terdaftar...": None,
+    "JPL 165 Cikudapateuh (Jl. A. Yani)": (-6.920800, 107.625800, "JPL 165 Cikudapateuh — Jl. Ahmad Yani"),
+    "JPL 161 Cimindi (Jl. Raya Cimindi)": (-6.897450, 107.562700, "JPL 161 Cimindi — Jl. Raya Cimindi"),
+    "JPL 169 Sunda (Jl. Sunda)": (-6.918150, 107.616600, "JPL 169 Sunda — Jl. Sunda"),
+    "JPL 167 Laswi (Jl. Laswi)": (-6.923400, 107.632100, "JPL 167 Laswi — Jl. Laswi"),
+    "JPL Garuda (Jl. Garuda)": (-6.907700, 107.579400, "JPL Garuda — Jl. Garuda"),
+    "JPL Andir (Jl. Jend. Sudirman)": (-6.914100, 107.574600, "JPL Andir — Jl. Jend. Sudirman"),
+    "JPL Kiaracondong (Jl. St. Kiaracondong)": (-6.925100, 107.646800, "JPL Kiaracondong — Jl. St. Kiaracondong"),
+    "JPL Pasirkaliki (Jl. Pasir Kaliki)": (-6.910300, 107.599100, "JPL Pasirkaliki — Jl. Pasir Kaliki"),
+    "Stasiun Bandung (Jl. Kebon Kawung)": (-6.914744, 107.609810, "Stasiun Bandung — Jl. Kebon Kawung"),
+}
+
+
+def geocode_location(query_str: str):
+    if not query_str or len(query_str.strip()) < 3:
+        return None
+    try:
+        search_q = query_str.strip()
+        if "bandung" not in search_q.lower() and "jawa barat" not in search_q.lower():
+            search_q += ", Bandung"
+        url = f"https://nominatim.openstreetmap.org/search?q={urllib.parse.quote(search_q)}&format=json&limit=1"
+        req = urllib.request.Request(
+            url,
+            headers={'User-Agent': 'StreamlitPI1_App/1.0 (contact: info@ulbi.ac.id)'}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            data = json.loads(response.read().decode())
+            if data and len(data) > 0:
+                lat = float(data[0]['lat'])
+                lon = float(data[0]['lon'])
+                name = data[0].get('display_name', query_str)
+                return lat, lon, name
+    except Exception:
+        pass
+    return None
+
+
+def on_preset_select():
+    preset_name = st.session_state.get("preset_select")
+    if preset_name and BANDUNG_JPL_PRESETS.get(preset_name) is not None:
+        plat, plon, pname = BANDUNG_JPL_PRESETS[preset_name]
+        st.session_state["map_lat"] = float(plat)
+        st.session_state["map_lon"] = float(plon)
+        st.session_state["map_label"] = pname
+
+
 def render_osm_location_input() -> None:
     st.markdown("""
     <div class="sec-hdr">
         <div class="sec-dot" style="background:rgba(16,185,129,.15);">📍</div>
         <div>
-            <div class="sec-title">Bagian 5 — Lokasi Perlintasan</div>
-            <div class="sec-desc">Penanda visual berbasis OpenStreetMap, tidak memengaruhi prediksi model</div>
+            <div class="sec-title">Bagian 5 — Titik Lokasi Peta Perlintasan</div>
+            <div class="sec-desc">Cari nama jalan/perlintasan sebidang, pilih preset, atau tentukan koordinat lokasi pada peta</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    loc_col, map_col = st.columns([0.9, 1.4])
+    # Initialize map state
+    if "map_lat" not in st.session_state:
+        st.session_state["map_lat"] = -6.914744
+    if "map_lon" not in st.session_state:
+        st.session_state["map_lon"] = 107.609810
+    if "map_label" not in st.session_state:
+        st.session_state["map_label"] = "Stasiun Bandung — Jl. Kebon Kawung"
+
+    loc_col, map_col = st.columns([1.0, 1.3])
 
     with loc_col:
-        lokasi = st.text_input(
-            "Nama / Catatan Lokasi",
-            placeholder="Contoh: JPL dekat Stasiun Bandung",
-            help="Opsional, hanya sebagai catatan visual untuk pengguna.",
+        st.markdown("**1. Pilih Perlintasan Sebidang Terdaftar**")
+        st.selectbox(
+            "Preset Perlintasan",
+            options=list(BANDUNG_JPL_PRESETS.keys()),
+            key="preset_select",
+            on_change=on_preset_select,
+            label_visibility="collapsed",
         )
-        lat = st.number_input(
+
+        st.markdown("**2. Atau Cari Nama Jalan / Perlintasan Sebidang**")
+        search_query = st.text_input(
+            "Cari Nama Jalan",
+            placeholder="Contoh: Jalan Sunda Bandung, JPL 167 Laswi, dll",
+            key="search_query_input",
+            label_visibility="collapsed",
+            help="Ketik nama jalan atau lokasi perlintasan lalu klik tombol cari.",
+        )
+
+        if st.button("🔍  Cari & Titikkan di Peta", use_container_width=True):
+            if search_query:
+                with st.spinner("🔍 Mencari lokasi di OpenStreetMap..."):
+                    geo_res = geocode_location(search_query)
+                    if geo_res:
+                        glat, glon, gname = geo_res
+                        short_name = gname.split(",")[0]
+                        st.session_state["map_lat"] = float(glat)
+                        st.session_state["map_lon"] = float(glon)
+                        st.session_state["map_label"] = short_name
+                        st.success(f"📍 Ditemukan: {short_name}")
+                    else:
+                        st.warning("⚠️ Lokasi tidak ditemukan. Silakan periksa ejaan atau gunakan koordinat manual.")
+
+        st.markdown("<hr style='margin:0.8rem 0;'/>", unsafe_allow_html=True)
+        st.markdown("**3. Koordinat Manual & Catatan**")
+
+        st.number_input(
             "Latitude",
             min_value=-90.0,
             max_value=90.0,
-            value=-6.914744,
             step=0.000100,
             format="%.6f",
+            key="map_lat",
         )
-        lon = st.number_input(
+        st.number_input(
             "Longitude",
             min_value=-180.0,
             max_value=180.0,
-            value=107.609810,
             step=0.000100,
             format="%.6f",
+            key="map_lon",
         )
-        label_osm = lokasi.strip() or "Lokasi perlintasan dipilih"
-        st.caption(f"{label_osm} · {lat:.6f}, {lon:.6f}")
+
+        st.text_input(
+            "Label / Catatan Lokasi",
+            key="map_label",
+            help="Catatan visual lokasi perlintasan sebidang.",
+        )
+
+        lat = float(st.session_state["map_lat"])
+        lon = float(st.session_state["map_lon"])
+        label_osm = str(st.session_state["map_label"])
+        st.caption(f"📍 **{label_osm}** · `{lat:.6f}, {lon:.6f}`")
 
     with map_col:
-        delta = 0.008
-        bbox  = f"{lon - delta}%2C{lat - delta}%2C{lon + delta}%2C{lat + delta}"
-        marker = f"{lat}%2C{lon}"
-        src = (
-            f"https://www.openstreetmap.org/export/embed.html"
-            f"?bbox={bbox}&layer=mapnik&marker={marker}"
-        )
-        components.html(
-            f"""
-            <iframe
-                title="Peta lokasi perlintasan OSM"
-                src="{src}"
-                style="width:100%;height:360px;border:1px solid rgba(148,163,184,.25);
-                       border-radius:12px;"
-                loading="lazy">
-            </iframe>
-            """,
-            height=380,
-        )
+        curr_lat = float(st.session_state["map_lat"])
+        curr_lon = float(st.session_state["map_lon"])
+        curr_label = str(st.session_state["map_label"]).replace('"', '\\"')
+
+        leaflet_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8" />
+            <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+            <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+            <style>
+                html, body {{ margin: 0; padding: 0; height: 100%; width: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+                #map {{ width: 100%; height: 410px; border-radius: 14px; border: 1px solid #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }}
+                .leaflet-popup-content-wrapper {{ border-radius: 10px; padding: 4px; }}
+                .popup-title {{ font-weight: 800; color: #1e293b; font-size: 13px; margin-bottom: 2px; }}
+                .popup-coords {{ font-size: 11px; color: #2563eb; font-weight: 600; }}
+            </style>
+        </head>
+        <body>
+            <div id="map"></div>
+            <script>
+                var lat = {curr_lat};
+                var lon = {curr_lon};
+                var map = L.map('map').setView([lat, lon], 16);
+
+                L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png', {{
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors'
+                }}).addTo(map);
+
+                var marker = L.marker([lat, lon]).addTo(map);
+                marker.bindPopup("<div class='popup-title'>📍 {curr_label}</div><div class='popup-coords'>" + lat.toFixed(6) + ", " + lon.toFixed(6) + "</div>").openPopup();
+            </script>
+        </body>
+        </html>
+        """
+        components.html(leaflet_html, height=430)
 
 
 def render_predict() -> None:
@@ -409,7 +525,7 @@ def render_predict() -> None:
     🔍 Rincian Probabilitas
 </div>"""
 
-        for rname, rclr in [("Rendah", "#10b981"), ("Sedang", "#f59e0b"), ("Tinggi", "#ef4444")]:
+        for rname, rclr in [("Rendah", "#059669"), ("Sedang", "#d97706"), ("Tinggi", "#dc2626")]:
             pv = probs[rname]
             ico = "🟢" if rname == "Rendah" else "🟡" if rname == "Sedang" else "🔴"
             is_predicted = (rname == label)

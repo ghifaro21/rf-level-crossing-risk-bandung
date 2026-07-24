@@ -37,7 +37,7 @@ def render_sidebar() -> str:
 
         st.markdown("""
         <div class="sidebar-footer">
-            Proyek Integrasi 1 · ULBI · Data Science<br>© 2026 I.T Ghifari
+            Proyek Integrasi 1 · ULBI · Data Science<br>© 2026 I.T Ghifari & Umi A. G
         </div>
         """, unsafe_allow_html=True)
 

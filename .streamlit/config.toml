@@ -1,16 +1,16 @@
 [theme]
-# Pilih "dark" atau "light" sebagai tampilan default.
-# User tetap bisa mengganti mode via Settings (⋮ → Settings) di Streamlit UI.
-base = "dark"
+# Mode Light sebagai default
+base = "light"
 
-# Primary color (warna aksen: button, slider, elemen aktif)
-primaryColor = "#3b82f6"
+# Primary color (warna aksen utama)
+primaryColor = "#2563eb"
 
-# Warna font utama
-textColor = "#e2e8f0"
+# Warna font utama (Slate 900)
+textColor = "#0f172a"
 
-# Background utama
-backgroundColor = "#080c18"
+# Background utama (Slate 50)
+backgroundColor = "#f8fafc"
 
-# Background komponen (sidebar, widget)
-secondaryBackgroundColor = "#0d1424"
+# Background komponen / sidebar (Pure White)
+secondaryBackgroundColor = "#ffffff"
+
