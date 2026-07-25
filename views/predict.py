@@ -18,9 +18,11 @@ BANDUNG_JPL_PRESETS = {
     "JPL Andir (Jl. Jend. Sudirman)": (-6.914100, 107.574600, "JPL Andir — Jl. Jend. Sudirman"),
     "JPL Kiaracondong (Jl. St. Kiaracondong)": (-6.925100, 107.646800, "JPL Kiaracondong — Jl. St. Kiaracondong"),
     "JPL Pasirkaliki (Jl. Pasir Kaliki)": (-6.910300, 107.599100, "JPL Pasirkaliki — Jl. Pasir Kaliki"),
-    "Stasiun Bandung (Jl. Kebon Kawung)": (-6.914744, 107.609810, "Stasiun Bandung — Jl. Kebon Kawung"),
+    "JPL 163B Sumatera (Jl. Sumatera)": (-6.916024, 107.6121541, "JPL 163B Sumatera — Jl. Sumatera"),
+    "JPL 164 Sunda Timur (Jl. Sunda)": (-6.9168393, 107.6160538, "JPL 164 Sunda Timur — Jl. Sunda"),
+    "JPL 178 Gedebage": (-6.9461284, 107.7011773, "JPL 178 — Jl. Cimincrang"),
+    "JPL 188 Haurpugur": (-6.9816764, 107.8008582, "JPL 188 — Haurpugur")
 }
-
 
 def geocode_location(query_str: str):
     if not query_str or len(query_str.strip()) < 3:
@@ -44,7 +46,6 @@ def geocode_location(query_str: str):
     except Exception:
         pass
     return None
-
 
 def on_preset_select():
     preset_name = st.session_state.get("preset_select")
