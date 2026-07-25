@@ -47,6 +47,22 @@ def geocode_location(query_str: str):
         pass
     return None
 
+def reverse_geocode_location(lat: float, lon: float):
+    try:
+        url = f"https://nominatim.openstreetmap.org/reverse?lat={lat}&lon={lon}&format=json"
+        req = urllib.request.Request(
+            url,
+            headers={'User-Agent': 'StreamlitPI1_App/1.0 (contact: info@ulbi.ac.id)'}
+        )
+        with urllib.request.urlopen(req, timeout=4) as response:
+            data = json.loads(response.read().decode())
+            if data and "display_name" in data:
+                return data["display_name"]
+    except Exception:
+        pass
+    return None
+
+
 def on_preset_select():
     preset_name = st.session_state.get("preset_select")
     if preset_name and BANDUNG_JPL_PRESETS.get(preset_name) is not None:
@@ -111,7 +127,7 @@ def render_osm_location_input() -> None:
                         st.warning("⚠️ Lokasi tidak ditemukan. Silakan periksa ejaan atau gunakan koordinat manual.")
 
         st.markdown("<hr style='margin:0.8rem 0;'/>", unsafe_allow_html=True)
-        st.markdown("**3. Koordinat Manual & Catatan**")
+        st.markdown("**3. Koordinat Manual & Catatan Alamat**")
 
         st.number_input(
             "Latitude",
@@ -130,6 +146,18 @@ def render_osm_location_input() -> None:
             key="map_lon",
         )
 
+        if st.button("🗺️  Deteksi Alamat Otomatis dari Koordinat", use_container_width=True):
+            curr_lat_val = float(st.session_state["map_lat"])
+            curr_lon_val = float(st.session_state["map_lon"])
+            with st.spinner("📍 Mengambil alamat dari OpenStreetMap..."):
+                rev_addr = reverse_geocode_location(curr_lat_val, curr_lon_val)
+                if rev_addr:
+                    short_addr = rev_addr.split(",")[0]
+                    st.session_state["map_label"] = short_addr
+                    st.success(f"📍 Alamat Terdeteksi: {rev_addr}")
+                else:
+                    st.warning("⚠️ Alamat tidak ditemukan untuk koordinat tersebut.")
+
         st.text_input(
             "Label / Catatan Lokasi",
             key="map_label",
@@ -140,6 +168,7 @@ def render_osm_location_input() -> None:
         lon = float(st.session_state["map_lon"])
         label_osm = str(st.session_state["map_label"])
         st.caption(f"📍 **{label_osm}** · `{lat:.6f}, {lon:.6f}`")
+
 
     with map_col:
         curr_lat = float(st.session_state["map_lat"])
